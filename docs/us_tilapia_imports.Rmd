@@ -1,0 +1,64 @@
+---
+title: "US Tilapia Imports"
+author: "Michelle Lam"
+date: "2022-08-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(janitor)
+library(skimr)
+```
+
+```{r}
+# Read in the us_tilapia_imports data
+us_tilapia_imports <- read_csv(here::here("data", "us_tilapia_imports.csv"))
+
+# look at the data
+summary(us_tilapia_imports)
+names(us_tilapia_imports)
+dim(us_tilapia_imports)
+skim(us_tilapia_imports)
+
+# create tidy data
+us_tilapia_imports_long <- us_tilapia_imports |> 
+  pivot_longer(cols = -country, names_to = "year", values_to = "imports")
+
+class(us_tilapia_imports_long$year)
+
+# change class of year column to numeric
+us_tilapia_imports_clean <- us_tilapia_imports_long |> 
+  mutate(year = as.numeric(year))
+
+class(us_tilapia_imports_clean$year)
+
+# create data frame summarizing the total imports by country by year
+yearly_tilapia_tot <- us_tilapia_imports_clean |> 
+  group_by(year) |> 
+  summarize(total = sum(imports, na.rm = TRUE))
+
+# Create graph of tilapia imports over the years
+ggplot(data = yearly_tilapia_tot, aes(x = year, y = total)) + 
+  geom_line(color = "darkorchid") +
+  labs(x = "Year", y = "Total Imports")
+
+ggsave(here::here("figs", "tilapia_imports_graph.jpg"))
+
+# Create subset of imports from Ecuador, Honduras, Costa Rica, and Mexico
+yearly_tilapia_filtered <- us_tilapia_imports_clean |> 
+  filter(country %in% c("Ecuador", "Honduras", "Costa Rica", "Mexico"), na.rm = TRUE)
+
+# create graph of us tilapia imports over time for 4 countries
+ggplot(data = yearly_tilapia_filtered, aes(x = year, y = imports)) +
+  geom_line(aes(color = country)) +
+  labs(x = "Year", y = "Imports", title = "US Tilapia Imports") +
+  theme_minimal() +
+  scale_color_manual(values = c("darkorchid", "cyan4", "goldenrod", "palevioletred3"))
+
+ggsave(here("figs", "tilapia_imports_filtered.jpg"))
+```
+
